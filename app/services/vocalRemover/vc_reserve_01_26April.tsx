@@ -1,0 +1,517 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+
+export default function VocalRemoverClient() {
+  // State declarations remain the same
+  const [uploaded, setUploaded] = useState(false);
+  const [removingVocals, setRemovingVocals] = useState(false);
+  const [originalAudioURL, setOriginalAudioURL] = useState<string | null>(null);
+  const [instrumentalAudioURL, setInstrumentalAudioURL] = useState<string | null>(null);
+  const [isPlayingOriginal, setIsPlayingOriginal] = useState(false);
+  const [isPlayingInstrumental, setIsPlayingInstrumental] = useState(false);
+  const [originalVolume, setOriginalVolume] = useState(0);
+  const [instrumentalVolume, setInstrumentalVolume] = useState(0);
+  const [isOriginalPaused, setIsOriginalPaused] = useState(true);
+  const [isInstrumentalPaused, setIsInstrumentalPaused] = useState(true);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Refs remain the same
+  const originalAudioRef = useRef<HTMLAudioElement>(null);
+  const instrumentalAudioRef = useRef<HTMLAudioElement>(null);
+
+  // File upload handler remains the same
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      const url = URL.createObjectURL(file);
+      setUploadedFile(file);
+      setOriginalAudioURL(url);
+      setUploaded(true);
+      setError(null);
+    }
+  };
+
+  // Fixed vocal removal handler
+  const handleRemoveVocals = async () => {
+    if (!uploadedFile) return;
+    
+    setRemovingVocals(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("audio_file", uploadedFile);
+      formData.append("task", "Vocal Remove");
+
+      const response = await fetch("http://localhost:8000/process-audio/", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || "Processing failed");
+      }
+
+      if (data.output_files?.length >= 2) {
+        // Proper path handling for Windows/Linux compatibility
+        const accompanimentPath = data.output_files[1]
+          .replace(/\\/g, '/') // Convert Windows paths to URL format
+          .split('/') // Split into path segments
+          .map(segment => encodeURIComponent(segment)) // Encode each segment
+          .join('/'); // Rebuild path
+
+        const instrumentalURL = `http://localhost:8000/download/${accompanimentPath}`;
+        
+        // Verify the URL before setting state
+        const testResponse = await fetch(instrumentalURL);
+        if (!testResponse.ok) {
+          throw new Error("Processed file not found");
+        }
+        
+        setInstrumentalAudioURL(instrumentalURL);
+      } else {
+        throw new Error("Invalid server response");
+      }
+    } catch (err) {
+      console.error("Processing error:", err);
+      setError(err instanceof Error ? err.message : "Audio processing failed");
+    } finally {
+      setRemovingVocals(false);
+    }
+  };
+  // Rest of the audio control functions remain the same
+  const toggleOriginalPlayPause = () => {
+    if (originalAudioRef.current) {
+      if (isOriginalPaused) {
+        originalAudioRef.current.play();
+        setIsPlayingOriginal(true);
+        setIsOriginalPaused(false);
+        if (originalVolume === 0) setOriginalVolume(50);
+      } else {
+        originalAudioRef.current.pause();
+        setIsPlayingOriginal(false);
+        setIsOriginalPaused(true);
+      }
+    }
+  };
+
+  const handleOriginalVolumeChange = (value: number) => {
+    setOriginalVolume(value);
+    if (originalAudioRef.current) {
+      originalAudioRef.current.volume = value / 100;
+      if (value === 0) {
+        originalAudioRef.current.pause();
+        setIsPlayingOriginal(false);
+        setIsOriginalPaused(true);
+      } else {
+        originalAudioRef.current.play();
+        setIsPlayingOriginal(true);
+        setIsOriginalPaused(false);
+      }
+    }
+  };
+
+  const toggleInstrumentalPlayPause = () => {
+    if (instrumentalAudioRef.current) {
+      if (isInstrumentalPaused) {
+        instrumentalAudioRef.current.play();
+        setIsPlayingInstrumental(true);
+        setIsInstrumentalPaused(false);
+        if (instrumentalVolume === 0) setInstrumentalVolume(50);
+      } else {
+        instrumentalAudioRef.current.pause();
+        setIsPlayingInstrumental(false);
+        setIsInstrumentalPaused(true);
+      }
+    }
+  };
+
+  const handleInstrumentalVolumeChange = (value: number) => {
+    setInstrumentalVolume(value);
+    if (instrumentalAudioRef.current) {
+      instrumentalAudioRef.current.volume = value / 100;
+      if (value === 0) {
+        instrumentalAudioRef.current.pause();
+        setIsPlayingInstrumental(false);
+        setIsInstrumentalPaused(true);
+      } else {
+        instrumentalAudioRef.current.play();
+        setIsPlayingInstrumental(true);
+        setIsInstrumentalPaused(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (originalAudioRef.current) {
+      originalAudioRef.current.volume = originalVolume / 100;
+    }
+    if (instrumentalAudioRef.current) {
+      instrumentalAudioRef.current.volume = instrumentalVolume / 100;
+    }
+  }, [originalVolume, instrumentalVolume]);
+
+  return (
+    <section className="relative min-h-screen overflow-hidden">
+      {/* Background Video */}
+      <video
+        className="absolute top-0 left-0 w-full h-full object-cover"
+        src="/Vocal_BG.mp4"
+        autoPlay
+        loop
+        muted
+      />
+
+      {/* Overlay for Contrast */}
+      <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50"></div>
+
+      {/* Main Content */}
+      <div className="relative z-10 text-white">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="py-12 md:py-20">
+            {/* Section Header */}
+            <div className="pb-12 text-center">
+              <h1 className="text-4xl font-bold md:text-5xl text-green-300">
+                Voice Remover
+              </h1>
+              <p className="text-lg mt-4 text-gray-300 max-w-3xl mx-auto">
+                Remove vocals from your audio tracks and enjoy instrumental versions.
+              </p>
+              {error && (
+                <div className="mt-4 p-3 bg-red-800/50 rounded-lg text-red-300">
+                  Error: {error}
+                </div>
+              )}
+            </div>
+
+            {/* Upload Form */}
+            {!uploaded ? (
+              <form className="mx-auto max-w-md bg-transparent">
+                <div className="space-y-5">
+                  <div className="relative">
+                    <input
+                      id="upload"
+                      type="file"
+                      accept="audio/*"
+                      className="w-full h-12 opacity-0 cursor-pointer"
+                      onChange={handleUpload}
+                      required
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-gray-500 rounded-lg bg-transparent pointer-events-none">
+                      <p className="text-gray-200 opacity-80">
+                        Click to Choose a File<span className="text-red-500">*</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-6">
+                {!removingVocals ? (
+                  <div className="text-center">
+                    <button
+                      className="px-6 py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded shadow hover:from-green-500 hover:to-blue-600 transition-all duration-300"
+                      onClick={handleRemoveVocals}
+                    >
+                      Remove Vocals
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex items-center space-x-2 text-white">
+                      <div className="loader-dot"></div>
+                      <div className="loader-dot"></div>
+                      <div className="loader-dot"></div>
+                      <span>Processing...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Display Original and Instrumental Audio */}
+            {uploaded && !removingVocals && instrumentalAudioURL && (
+              <div className="mt-10 space-y-12">
+                {/* Original Audio */}
+                <div className="p-6 rounded-lg border-2 border-dashed border-gray-500 bg-transparent">
+                  <h2 className="text-xl font-semibold mb-4 text-center">
+                    Original Audio
+                  </h2>
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={toggleOriginalPlayPause}
+                        className="play-button focus:outline-none"
+                      >
+                        {isOriginalPaused ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 text-blue-500"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M5 3.5v17l14-8.5-14-8.5z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 text-blue-500"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M6 4h4v16h-4v-16zm8 0h4v16h-4v-16z" />
+                          </svg>
+                        )}
+                      </button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={originalVolume}
+                        onChange={(e) =>
+                          handleOriginalVolumeChange(Number(e.target.value))
+                        }
+                        className="w-32 h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
+                      />
+                    </div>
+                    {isPlayingOriginal ? (
+                      <div className="equalizer mt-4 w-full flex items-center justify-center">
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 w-full h-8 opacity-0 pointer-events-none"></div>
+                    )}
+                    <audio
+                      ref={instrumentalAudioRef}
+                      src={instrumentalAudioURL}
+                      onError={(e) => {
+                          console.error("Audio loading error:", e);
+                          setError("Failed to load instrumental audio");
+                      }}
+                      onEnded={() => {
+                        setIsPlayingInstrumental(false);
+                        setIsInstrumentalPaused(true);
+                        setInstrumentalVolume(0);
+                      }}
+/>
+                  </div>
+                  <div className="mt-6 flex justify-center">
+                    <a
+                      href={originalAudioURL!}
+                      download="original_audio.mp3"
+                      className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 flex items-center"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M3 15a1 1 0 001 1h12a1 1 0 001-1v-3h-2v3H5v-3H3v3z" />
+                        <path d="M7 10l3 3 3-3H9V4H7v6H4l3 3z" />
+                      </svg>
+                      Download Original
+                    </a>
+                  </div>
+                </div>
+
+                {/* Instrumental Audio */}
+                <div className="p-6 rounded-lg border-2 border-dashed border-gray-500 bg-transparent">
+                  <h2 className="text-xl font-semibold mb-4 text-center">
+                    Instrumental Audio
+                  </h2>
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={toggleInstrumentalPlayPause}
+                        className="play-button focus:outline-none"
+                      >
+                        {isInstrumentalPaused ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 text-blue-500"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M5 3.5v17l14-8.5-14-8.5z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 text-blue-500"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M6 4h4v16h-4v-16zm8 0h4v16h-4v-16z" />
+                          </svg>
+                        )}
+                      </button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={instrumentalVolume}
+                        onChange={(e) =>
+                          handleInstrumentalVolumeChange(Number(e.target.value))
+                        }
+                        className="w-32 h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
+                      />
+                    </div>
+                    {isPlayingInstrumental ? (
+                      <div className="equalizer mt-4 w-full flex items-center justify-center">
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                        <div className="bar"></div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 w-full h-8 opacity-0 pointer-events-none"></div>
+                    )}
+                    <audio
+                      ref={instrumentalAudioRef}
+                      src={instrumentalAudioURL}
+                      onEnded={() => {
+                        setIsPlayingInstrumental(false);
+                        setIsInstrumentalPaused(true);
+                        setInstrumentalVolume(0);
+                      }}
+                    />
+                  </div>
+                  <div className="mt-6 flex justify-center">
+                    <a
+                      href={instrumentalAudioURL}
+                      download="instrumental_audio.wav"
+                      className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 flex items-center"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-2"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M3 15a1 1 0 001 1h12a1 1 0 001-1v-3h-2v3H5v-3H3v3z" />
+                        <path d="M7 10l3 3 3-3H9V4H7v6H4l3 3z" />
+                      </svg>
+                      Download Instrumental
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+     
+
+      {/* Styles */}
+      <style jsx>{`
+  /* Container Background */
+  .control-container {
+    background: linear-gradient(135deg, #1a1b26, #16161e);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+
+  /* Equalizer Styles */
+  .equalizer {
+    height: 40px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .bar {
+    width: 120px;
+    background: linear-gradient(to top, #6366f1, #ec4899, #f59e0b);
+    /* Increase the animation duration for a more gradual cycle */
+    animation: equalize 2s infinite ease-in-out;
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* Adjust delays for a smooth staggered effect */
+  .bar:nth-child(1) { animation-delay: 0s; }
+  .bar:nth-child(2) { animation-delay: 0.15s; }
+  .bar:nth-child(3) { animation-delay: 0.3s; }
+  .bar:nth-child(4) { animation-delay: 0.45s; }
+  .bar:nth-child(5) { animation-delay: 0.6s; }
+  .bar:nth-child(6) { animation-delay: 0.75s; }
+  .bar:nth-child(7) { animation-delay: 0.9s; }
+  .bar:nth-child(8) { animation-delay: 1.05s; }
+
+  /* Loader Styles */
+        .loader-dot {
+          width: 10px;
+          height: 10px;
+          background: #ddd;
+          border-radius: 50%;
+          animation: loader 1s infinite alternate;
+        }
+        .loader-dot:nth-child(1) {
+          animation-delay: 0s;
+        }
+        .loader-dot:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        .loader-dot:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+
+  /* Keyframes: Increase amplitude by having a lower baseline and higher peak */
+  @keyframes equalize {
+    0%, 100% {
+      height: 10%;  /* Lower starting/ending height */
+    }
+    50% {
+      height: 100%;  /* Increase peak to fill the container */
+    }
+  }
+
+  /* Button Styles */
+  .control-button {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    border: none;
+    padding: 0.8rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  /* Volume Slider Styles */
+  .slider-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    height: 4px;
+  }
+
+  .slider-thumb::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(45deg, #6366f1, #ec4899);
+    border: 2px solid #fff;
+  }
+
+  /* Maintain original loader scaling */
+  @keyframes loader {
+    to {
+      transform: scale(1.5);
+      background: #ec4899;
+    }
+  }
+`}</style>
+    </section>
+  );
+}
+
+
