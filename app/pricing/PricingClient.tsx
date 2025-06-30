@@ -222,11 +222,15 @@ export default function PricingClient() {
     }
   };
 
-  const plans = [
-    pricingData[selectedRegion].ultraLite,
-    pricingData[selectedRegion].lite,
-    pricingData[selectedRegion].pro,
-  ];
+ type Region = 'international' | 'india'; // Add more if needed
+
+const selectedRegion: Region = ...;
+
+const plans = [
+  pricingData[selectedRegion].ultraLite,
+  pricingData[selectedRegion].lite,
+  pricingData[selectedRegion].pro,
+];
 
   const handlePayPal = (planName: string) => {
     alert(`Redirecting to PayPal for plan: ${planName}`);
