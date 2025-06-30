@@ -225,19 +225,14 @@ export default function PricingClient() {
   }
 };
 
- type Region = 'international' | 'india'; // Add more if needed
-
-const selectedRegion: Region = 'india';
-
-const plans = [
-  pricingData[selectedRegion].ultraLite,
-  pricingData[selectedRegion].lite,
-  pricingData[selectedRegion].pro,
-];
+ const plans = [
+    pricingData[selectedRegion].ultraLite,
+    pricingData[selectedRegion].lite,
+    pricingData[selectedRegion].pro,
+  ];
 
   const handlePayPal = (planName: string) => {
     alert(`Redirecting to PayPal for plan: ${planName}`);
-    // TODO: Integrate PayPal SDK or redirection
   };
 
   const handleStripeClick = (planName: string) => {
