@@ -37,7 +37,6 @@ function PaymentForm({ selectedPlan }: { selectedPlan: string }) {
       alert(error.message);
     } else {
       alert(`Payment method created for ${selectedPlan}: ${paymentMethod.id}`);
-      // TODO: Send paymentMethod.id to your server to complete the payment
     }
   };
 
@@ -84,9 +83,11 @@ function PaymentForm({ selectedPlan }: { selectedPlan: string }) {
   );
 }
 
+type Region = "international" | "india";
+
 export default function PricingClient() {
-  const [selectedRegion, setSelectedRegion] = useState("international");
-  const [selectedBilling, setSelectedBilling] = useState("yearly");
+  const [selectedRegion, setSelectedRegion] = useState<Region>("international");
+  const [selectedBilling, setSelectedBilling] = useState<"monthly" | "yearly">("yearly");
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -99,7 +100,8 @@ export default function PricingClient() {
     }
   }, []);
 
-  const pricingData = {
+
+ const pricingData: Record<Region, any> = {
     international: {
       ultraLite: {
         name: "Ultra Lite",
@@ -220,7 +222,8 @@ export default function PricingClient() {
         }
       }
     }
-  };
+  }
+};
 
  type Region = 'international' | 'india'; // Add more if needed
 
