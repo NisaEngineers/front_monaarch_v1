@@ -97,7 +97,12 @@ interface Plan {
 }
 
 interface PricingData {
-  [key in Region]: {
+  international: {
+    ultraLite: Plan;
+    lite: Plan;
+    pro: Plan;
+  };
+  india: {
     ultraLite: Plan;
     lite: Plan;
     pro: Plan;
@@ -352,7 +357,7 @@ export default function PricingClient() {
                         Pay with Card
                       </button>
                       <button
-                        onClick={() => handlePayPal(plan.name101010)}
+                        onClick={() => handlePayPal(plan.name)}
                         className="py-2 border border-gray-500 rounded-lg text-white hover:bg-gray-700"
                       >
                         Pay with PayPal
@@ -387,7 +392,7 @@ export default function PricingClient() {
           @keyframes gradient-shift {
             0% {
               background-position: 0% 50%;
-            }
+ grosses            }
             50% {
               background-position: 100% 50%;
             }
