@@ -13,10 +13,14 @@ import {
 
 const stripePromise = loadStripe("YOUR_STRIPE_PUBLIC_KEY");
 
-function PaymentForm({ selectedPlan }: { selectedPlan: string }) {
+interface PaymentFormProps {
+  selectedPlan: string;
+}
+
+function PaymentForm({ selectedPlan }: PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const [cardholderName, setCardholderName] = useState("");
+  const [cardholderName, setCardholderName] = useState<string>("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +47,7 @@ function PaymentForm({ selectedPlan }: { selectedPlan: string }) {
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
       <div>
-        <label className="block text-sm mb-1">Cardholder Name</label>
+        <label className="block text-sm mb-1 text-white">Cardholder Name</label>
         <input
           type="text"
           value={cardholderName}
@@ -53,26 +57,25 @@ function PaymentForm({ selectedPlan }: { selectedPlan: string }) {
         />
       </div>
       <div>
-        <label className="block text-sm mb-1">Card Number</label>
+        <label className="block text-sm mb-1 text-white">Card Number</label>
         <div className="p-2 bg-gray-800 rounded-md border border-gray-600 text-white">
           <CardNumberElement className="w-full" />
         </div>
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="block text-sm mb-1">Expiry Date</label>
+          <label className="block text-sm mb-1 text-white">Expiry Date</label>
           <div className="p-2 bg-gray-800 rounded-md border border-gray-600 text-white">
             <CardExpiryElement className="w-full" />
           </div>
         </div>
         <div className="flex-1">
-          <label className="block text-sm mb-1">CVC</label>
+          <label className="block text-sm mb-1 text-white">CVC</label>
           <div className="p-2 bg-gray-800 rounded-md border border-gray-600 text-white">
             <CardCvcElement className="w-full" />
           </div>
         </div>
       </div>
-
       <button
         type="submit"
         className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-lg hover:from-green-500 hover:to-blue-600 transition-all duration-300"
@@ -84,12 +87,28 @@ function PaymentForm({ selectedPlan }: { selectedPlan: string }) {
 }
 
 type Region = "international" | "india";
+type Billing = "monthly" | "yearly";
+
+interface Plan {
+  name: string;
+  pricing: string | { monthly: string; yearly: string };
+  features: Record<string, string>;
+  bestValue?: boolean;
+}
+
+interface PricingData {
+  [key in Region]: {
+    ultraLite: Plan;
+    lite: Plan;
+    pro: Plan;
+  };
+}
 
 export default function PricingClient() {
   const [selectedRegion, setSelectedRegion] = useState<Region>("international");
-  const [selectedBilling, setSelectedBilling] = useState<"monthly" | "yearly">("yearly");
+  const [selectedBilling, setSelectedBilling] = useState<Billing>("yearly");
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -100,8 +119,7 @@ export default function PricingClient() {
     }
   }, []);
 
-
- const pricingData: Record<Region, any> = {
+  const pricingData: PricingData = {
     international: {
       ultraLite: {
         name: "Ultra Lite",
@@ -117,14 +135,14 @@ export default function PricingClient() {
           "Stem Download": "50 minutes",
           "Batch Upload": "Yes",
           "Chords Conversion": "Yes",
-          "Chords Download": "3 Tracks"
-        }
+          "Chords Download": "3 Tracks",
+        },
       },
       lite: {
         name: "Lite",
         pricing: {
           yearly: "$9.99",
-          monthly: "$19.99"
+          monthly: "$19.99",
         },
         features: {
           "Number of Tracks": "Any",
@@ -137,14 +155,14 @@ export default function PricingClient() {
           "Stem Download": "500 minutes",
           "Batch Upload": "Yes",
           "Chords Conversion": "Yes",
-          "Chords Download": "50 Tracks per month"
-        }
+          "Chords Download": "50 Tracks per month",
+        },
       },
       pro: {
         name: "Pro",
         pricing: {
           yearly: "$14.99",
-          monthly: "$29.99"
+          monthly: "$29.99",
         },
         bestValue: true,
         features: {
@@ -158,9 +176,9 @@ export default function PricingClient() {
           "Stem Download": "800 Minutes",
           "Batch Upload": "Yes",
           "Chords Conversion": "Yes",
-          "Chords Download": "100 Tracks per month"
-        }
-      }
+          "Chords Download": "100 Tracks per month",
+        },
+      },
     },
     india: {
       ultraLite: {
@@ -177,14 +195,14 @@ export default function PricingClient() {
           "Stem Download": "50 minutes",
           "Batch Upload": "Yes",
           "Chords Conversion": "Yes",
-          "Chords Download": "3 Tracks"
-        }
+          "Chords Download": "3 Tracks",
+        },
       },
       lite: {
         name: "Lite",
         pricing: {
           yearly: "Rs.150/month, Rs.1800 billed upfront",
-          monthly: "Rs.190/month"
+          monthly: "Rs.190/month",
         },
         features: {
           "Number of Tracks": "Any",
@@ -197,14 +215,14 @@ export default function PricingClient() {
           "Stem Download": "500 minutes",
           "Batch Upload": "Yes",
           "Chords Conversion": "Yes",
-          "Chords Download": "20 Tracks"
-        }
+          "Chords Download": "20 Tracks",
+        },
       },
       pro: {
         name: "Pro",
         pricing: {
           yearly: "Rs.250/month, Rs.3000 billed upfront",
-          monthly: "Rs.290/month"
+          monthly: "Rs.290/month",
         },
         bestValue: true,
         features: {
@@ -218,14 +236,13 @@ export default function PricingClient() {
           "Stem Download": "800 Minutes",
           "Batch Upload": "Yes",
           "Chords Conversion": "Yes",
-          "Chords Download": "100 Tracks per month"
-        }
-      }
-    }
-  }
-};
+          "Chords Download": "100 Tracks per month",
+        },
+      },
+    },
+  };
 
- const plans = [
+  const plans: Plan[] = [
     pricingData[selectedRegion].ultraLite,
     pricingData[selectedRegion].lite,
     pricingData[selectedRegion].pro,
@@ -265,7 +282,6 @@ export default function PricingClient() {
               <div className="mt-8 flex justify-center gap-4">
                 <button
                   onClick={() => setSelectedBilling("monthly")}
-				 
                   className={`px-6 py-2 rounded-full ${
                     selectedBilling === "monthly"
                       ? "bg-gradient-to-r from-green-400 to-blue-500 text-white"
@@ -276,7 +292,6 @@ export default function PricingClient() {
                 </button>
                 <button
                   onClick={() => setSelectedBilling("yearly")}
-				  
                   className={`px-6 py-2 rounded-full ${
                     selectedBilling === "yearly"
                       ? "bg-gradient-to-r from-green-400 to-blue-500 text-white"
@@ -290,13 +305,13 @@ export default function PricingClient() {
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {plans.map((plan, index) => {
-                let pricingDisplay =
+                const pricingDisplay =
                   typeof plan.pricing === "string"
                     ? plan.pricing
                     : plan.pricing[selectedBilling];
-                if (plan.bestValue) {
-                  pricingDisplay = `Best Value for Money - ${pricingDisplay}`;
-                }
+                const displayPrice = plan.bestValue
+                  ? `Best Value for Money - ${pricingDisplay}`
+                  : pricingDisplay;
 
                 return (
                   <div
@@ -306,7 +321,7 @@ export default function PricingClient() {
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
                       {plan.name}
                     </h2>
-                    <div className="mt-4 text-3xl font-bold">{pricingDisplay}</div>
+                    <div className="mt-4 text-3xl font-bold">{displayPrice}</div>
 
                     <ul className="my-6 space-y-4 text-sm">
                       {Object.entries(plan.features).map(([key, value]) => (
@@ -337,7 +352,7 @@ export default function PricingClient() {
                         Pay with Card
                       </button>
                       <button
-                        onClick={() => handlePayPal(plan.name)}
+                        onClick={() => handlePayPal(plan.name101010)}
                         className="py-2 border border-gray-500 rounded-lg text-white hover:bg-gray-700"
                       >
                         Pay with PayPal
@@ -348,7 +363,6 @@ export default function PricingClient() {
               })}
             </div>
 
-            {/* Modal */}
             {showModal && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
                 <div className="bg-gray-900 p-6 rounded-2xl max-w-md w-full border border-gray-700 relative shadow-2xl scale-95 opacity-0 animate-fadeIn">
