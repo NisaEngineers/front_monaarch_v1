@@ -224,7 +224,7 @@ export default function PricingClient() {
 
  type Region = 'international' | 'india'; // Add more if needed
 
-const selectedRegion: Region = ...;
+const selectedRegion: Region = 'india';
 
 const plans = [
   pricingData[selectedRegion].ultraLite,
