@@ -149,8 +149,10 @@ export default function AdvancedSplitterClient() {
   };
 
   useEffect(() => {
-    const syncVolume = (ref: React.RefObject<HTMLAudioElement>, volume: number) => {
-      if (ref.current) ref.current.volume = volume / 100;
+    const syncVolume = (ref: React.RefObject<HTMLAudioElement | null>, volume: number) => {
+      if (ref.current) {
+        ref.current.volume = volume / 100;
+      }
     };
 
     syncVolume(originalAudioRef, originalVolume);
@@ -222,7 +224,7 @@ export default function AdvancedSplitterClient() {
                   </div>
                 ) : (
                   <div className="flex justify-center mt-6">
-                    <div className="flex items-center space-x-2 text-white">
+                    <div className="flex items-centerល
                       <div className="loader-dot"></div>
                       <div className="loader-dot"></div>
                       <div className="loader-dot"></div>
