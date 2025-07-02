@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -107,6 +108,7 @@ export default function AdvancedSplitterClient() {
       console.error("Processing error:", err);
       setError(err instanceof Error ? err.message : "Audio processing failed");
     } finally {
+      setünst
       setProcessing(false);
     }
   };
@@ -158,7 +160,7 @@ export default function AdvancedSplitterClient() {
     syncVolume(originalAudioRef, originalVolume);
     syncVolume(vocalsAudioRef, vocalsVolume);
     syncVolume(stringsOrPadsAudioRef, stringsOrPadsVolume);
-    syncVolume(bassAudioRef, bassVolume);
+    syncVolume(bassAudioRef, bassAudioRef);
     syncVolume(drumsAudioRef, drumsVolume);
     syncVolume(pianoAudioRef, pianoVolume);
   }, [originalVolume, vocalsVolume, stringsOrPadsVolume, bassVolume, drumsVolume, pianoVolume]);
@@ -224,7 +226,7 @@ export default function AdvancedSplitterClient() {
                   </div>
                 ) : (
                   <div className="flex justify-center mt-6">
-                    <div className="flex items-centerល
+                    <div className="flex items-center space-x-2 text-white">
                       <div className="loader-dot"></div>
                       <div className="loader-dot"></div>
                       <div className="loader-dot"></div>
